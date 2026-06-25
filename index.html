@@ -4982,6 +4982,129 @@
       }
     }
 
+  
+    /* HASIL LOKASI SISWA SETELAH SCAN QR */
+    .qr-location-result {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.035));
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      animation: locationResultIn 0.28s ease both;
+    }
+
+    @keyframes locationResultIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .qr-location-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .qr-location-head h3 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .qr-location-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .location-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: rgba(255, 255, 255, 0.78);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .location-badge.accepted {
+      color: #d6ffe5;
+      background: rgba(73, 209, 125, 0.12);
+      border-color: rgba(73, 209, 125, 0.28);
+    }
+
+    .location-badge.rejected {
+      color: #ffe0e3;
+      background: rgba(255, 77, 94, 0.12);
+      border-color: rgba(255, 77, 94, 0.28);
+    }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .location-item {
+      min-width: 0;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.075);
+    }
+
+    .location-item span {
+      display: block;
+      margin-bottom: 6px;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 12px;
+    }
+
+    .location-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .location-map-btn {
+      width: 100%;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .location-map-btn.disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 560px) {
+      .qr-location-head {
+        flex-direction: column;
+      }
+
+      .location-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -5304,6 +5427,39 @@
 
             <div id="qrScanInfo" class="qr-scan-info">
               Hadir memakai QR hanya untuk siswa yang berada di area sekolah. Sakit atau izin tetap lewat menu Pengajuan.
+            </div>
+
+            <div id="qrLocationResult" class="qr-location-result hidden">
+              <div class="qr-location-head">
+                <div>
+                  <h3>Lokasi Siswa</h3>
+                  <p id="qrLocationStatus">Belum ada lokasi.</p>
+                </div>
+                <span id="qrLocationBadge" class="location-badge">Menunggu</span>
+              </div>
+
+              <div class="location-grid">
+                <div class="location-item">
+                  <span>Latitude</span>
+                  <strong id="qrLocationLat">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Longitude</span>
+                  <strong id="qrLocationLng">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Jarak</span>
+                  <strong id="qrLocationDistance">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Akurasi GPS</span>
+                  <strong id="qrLocationAccuracy">-</strong>
+                </div>
+              </div>
+
+              <a id="qrLocationMapLink" class="btn location-map-btn" href="#" target="_blank" rel="noopener">
+                Buka Lokasi di Google Maps
+              </a>
             </div>
           </div>
 
@@ -7005,6 +7161,43 @@
       }) || null;
     };
 
+
+    const renderStudentLocationResult = ({ status, message, lat, lng, distance, accuracy, radius }) => {
+      const box = $("qrLocationResult");
+      if (!box) return;
+
+      const isAccepted = status === "accepted";
+      const isRejected = status === "rejected";
+
+      $("qrLocationStatus").textContent = message || "Lokasi berhasil dibaca.";
+      $("qrLocationLat").textContent = Number.isFinite(lat) ? lat.toFixed(7) : "-";
+      $("qrLocationLng").textContent = Number.isFinite(lng) ? lng.toFixed(7) : "-";
+      $("qrLocationDistance").textContent = Number.isFinite(distance)
+        ? `${distance} meter${Number.isFinite(radius) ? ` dari radius ${radius} meter` : ""}`
+        : "-";
+      $("qrLocationAccuracy").textContent = Number.isFinite(accuracy)
+        ? `± ${Math.round(accuracy)} meter`
+        : "-";
+
+      const badge = $("qrLocationBadge");
+      badge.textContent = isAccepted ? "Diterima" : isRejected ? "Ditolak" : "Terdeteksi";
+      badge.classList.remove("accepted", "rejected");
+      if (isAccepted) badge.classList.add("accepted");
+      if (isRejected) badge.classList.add("rejected");
+
+      const mapLink = $("qrLocationMapLink");
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        mapLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+        mapLink.classList.remove("disabled");
+      } else {
+        mapLink.href = "#";
+        mapLink.classList.add("disabled");
+      }
+
+      box.classList.remove("hidden");
+    };
+
+
     const submitQrAttendance = async (rawCode) => {
       if (state.role !== "siswa") {
         showToast("Absen QR hanya untuk akun siswa.");
@@ -7049,7 +7242,20 @@
       const position = await getCurrentPosition();
       const userLat = position.coords.latitude;
       const userLng = position.coords.longitude;
+      const accuracy = position.coords.accuracy || null;
       const distance = distanceMeters(Number(session.schoolLat), Number(session.schoolLng), userLat, userLng);
+
+      renderStudentLocationResult({
+        status: distance > Number(session.radiusMeters) ? "rejected" : "accepted",
+        message: distance > Number(session.radiusMeters)
+          ? "Lokasi terdeteksi, tetapi berada di luar radius sekolah."
+          : "Lokasi terdeteksi dan berada di area sekolah.",
+        lat: userLat,
+        lng: userLng,
+        distance,
+        accuracy,
+        radius: Number(session.radiusMeters)
+      });
 
       if (distance > Number(session.radiusMeters)) {
         await addDoc(collection(db, "qrAttendanceLogs"), {
@@ -7062,8 +7268,10 @@
           reason: "outside_radius",
           distanceMeters: distance,
           radiusMeters: Number(session.radiusMeters),
+          accuracyMeters: accuracy,
           userLat,
           userLng,
+          mapsUrl: `https://www.google.com/maps?q=${userLat},${userLng}`,
           createdAt: serverTimestamp()
         });
 
@@ -7087,8 +7295,10 @@
         method: "qr_location",
         sessionCode: code,
         distanceMeters: distance,
+        accuracyMeters: accuracy,
         userLat,
         userLng,
+        mapsUrl: `https://www.google.com/maps?q=${userLat},${userLng}`,
         updatedByUid: state.user.uid,
         updatedByEmail: state.user.email,
         updatedByName: getProfileName(),
@@ -7104,8 +7314,10 @@
         status: "accepted",
         distanceMeters: distance,
         radiusMeters: Number(session.radiusMeters),
+        accuracyMeters: accuracy,
         userLat,
         userLng,
+        mapsUrl: `https://www.google.com/maps?q=${userLat},${userLng}`,
         createdAt: serverTimestamp()
       });
 
