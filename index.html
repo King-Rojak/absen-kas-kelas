@@ -5874,6 +5874,44 @@
       }
     }
 
+  
+    /* CLEAN DAFTAR SISWA */
+    #tabLokasi .location-detail-grid,
+    #tabLokasi .qr-log-card,
+    #tabLokasi #qrLocationLogsTable {
+      display: none !important;
+    }
+
+    #tabLokasi .student-status-list {
+      margin-top: 12px;
+    }
+
+    #tabLokasi .student-status-card {
+      grid-template-columns: 52px minmax(0, 1fr) auto !important;
+      min-height: 66px !important;
+      padding: 12px !important;
+    }
+
+    #tabLokasi .student-status-open {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    @media (max-width: 760px) {
+      #tabLokasi .student-status-card {
+        grid-template-columns: 48px minmax(0, 1fr) !important;
+      }
+
+      #tabLokasi .student-status-side {
+        grid-column: 2 !important;
+        justify-items: start !important;
+      }
+
+      #tabLokasi .student-status-open {
+        grid-column: 1 / -1 !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -6354,7 +6392,7 @@
         <div class="student-list-toolbar glass">
           <div>
             <h3>Daftar Status Siswa</h3>
-            <p id="studentListHint">Lihat daftar siswa, nomor absen, dan status absen hari ini.</p>
+            <p id="studentListHint">Daftar siswa berurutan sesuai nomor absen. Siswa hanya bisa melihat status, admin bisa membuka peta lokasi jika tersedia.</p>
           </div>
           <div class="student-status-legend">
             <span class="legend-item legend-hadir">Hadir</span>
@@ -6366,86 +6404,6 @@
 
         <div id="studentStatusList" class="student-status-list"></div>
 
-        <div class="grid grid-2 location-detail-grid admin-bendahara-only">
-          <div class="card glass">
-            <div class="card-header">
-              <div>
-                <h2 id="locationStudentName">Pilih siswa dari Daftar Siswa</h2>
-                <p id="locationStudentMeta">Admin bisa membuka lokasi siswa yang absen lewat QR.</p>
-              </div>
-            </div>
-
-            <div id="locationDetailEmpty" class="empty">
-              Belum ada lokasi yang dipilih.
-            </div>
-
-            <div id="locationDetailBox" class="location-detail-box hidden">
-              <div class="location-grid">
-                <div class="location-item">
-                  <span>Latitude</span>
-                  <strong id="adminLocationLat">-</strong>
-                </div>
-                <div class="location-item">
-                  <span>Longitude</span>
-                  <strong id="adminLocationLng">-</strong>
-                </div>
-                <div class="location-item">
-                  <span>Jarak dari sekolah</span>
-                  <strong id="adminLocationDistance">-</strong>
-                </div>
-                <div class="location-item">
-                  <span>Akurasi GPS</span>
-                  <strong id="adminLocationAccuracy">-</strong>
-                </div>
-              </div>
-
-              <div class="location-action-row">
-                <a id="adminLocationMapLink" class="btn location-map-btn" href="#" target="_blank" rel="noopener">
-                  Lihat Peta di Tab Baru
-                </a>
-                <button id="copyLocationLinkBtn" class="btn" type="button">Copy Link Maps</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card glass location-map-card">
-            <div class="card-header">
-              <div>
-                <h2>Peta Lokasi</h2>
-                <p>Tampilan peta mengikuti titik lokasi siswa saat scan QR.</p>
-              </div>
-            </div>
-
-            <div id="adminMapPlaceholder" class="map-placeholder">
-              Lokasi belum dipilih.
-            </div>
-
-            <iframe id="adminLocationMapFrame" class="admin-location-map hidden" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          </div>
-        </div>
-
-        <div class="card glass qr-log-card admin-only">
-          <div class="card-header">
-            <div>
-              <h2>Riwayat Lokasi QR</h2>
-              <p>Semua lokasi hasil scan QR pada tanggal yang dipilih.</p>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nama</th>
-                  <th>Status</th>
-                  <th>Jarak</th>
-                  <th>Lokasi</th>
-                </tr>
-              </thead>
-              <tbody id="qrLocationLogsTable"></tbody>
-            </table>
-          </div>
-        </div>
       </section>
 
 
@@ -8920,6 +8878,7 @@
 
 
 
+
     const normalizeKey = (value) => String(value || "")
       .trim()
       .toLowerCase()
@@ -8947,46 +8906,105 @@
       return { key: "belum", label: "Belum masuk" };
     };
 
+    const getRecordIdentity = (record) => {
+      return {
+        email: normalizeKey(record?.studentEmail || record?.updatedByEmail || record?.email),
+        name: normalizeKey(record?.studentName || record?.byName || record?.displayName || record?.name),
+        uid: String(record?.studentUid || record?.updatedByUid || "").trim()
+      };
+    };
+
+    const getStudentIdentity = (student) => {
+      return {
+        email: normalizeKey(student?.email),
+        name: normalizeKey(student?.name),
+        uid: String(student?.uid || student?.id || "").trim()
+      };
+    };
+
+    const isSamePersonRecord = (student, record) => {
+      const s = getStudentIdentity(student);
+      const r = getRecordIdentity(record);
+
+      return Boolean(
+        (s.email && r.email && s.email === r.email) ||
+        (s.name && r.name && s.name === r.name) ||
+        (s.uid && r.uid && s.uid === r.uid)
+      );
+    };
+
+    const getAllLocationRecords = () => {
+      if (typeof getAllQrLocationSources !== "function") return [];
+
+      const latestMap = new Map();
+
+      getAllQrLocationSources().forEach((log) => {
+        const record = makeLocationRecordFromLog(log);
+        const identity = getRecordIdentity(record);
+        const key = identity.email || identity.name || identity.uid || String(log.id || "");
+        const time = log.updatedAt?.toMillis?.() || log.createdAt?.toMillis?.() || 0;
+        const old = latestMap.get(key);
+
+        if (!old || time >= old.time) {
+          latestMap.set(key, { record, time, id: String(log.id || "").replace("log:", "").replace("stable:", "") });
+        }
+      });
+
+      return Array.from(latestMap.values());
+    };
+
     const findBestRecordForStudent = (student) => {
       const direct = state.attendance?.[student.id];
       if (direct && Object.keys(direct).length) return direct;
 
-      const studentName = normalizeKey(student.name);
-      const studentEmail = normalizeKey(student.email);
-
       const records = Object.values(state.attendance || {});
-      const matched = records.find((record) => {
-        const recordName = normalizeKey(record.studentName || record.byName);
-        const recordEmail = normalizeKey(record.studentEmail || record.updatedByEmail);
-        return (studentEmail && recordEmail && studentEmail === recordEmail)
-          || (studentName && recordName && studentName === recordName);
-      });
+      const matchedAttendance = records.find((record) => isSamePersonRecord(student, record));
+      if (matchedAttendance) return matchedAttendance;
 
-      if (matched) return matched;
-
-      const location = (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).find((log) => {
-        const logName = normalizeKey(log.studentName);
-        const logEmail = normalizeKey(log.studentEmail);
-        return (studentEmail && logEmail && studentEmail === logEmail)
-          || (studentName && logName && studentName === logName);
-      });
-
-      return location ? makeLocationRecordFromLog(location) : {};
+      const matchedLocation = getAllLocationRecords().find((item) => isSamePersonRecord(student, item.record));
+      return matchedLocation?.record || {};
     };
 
-    const makeRowKey = (row) => {
-      const email = normalizeKey(row.record?.studentEmail || row.email);
+    const makeStudentRowKey = (row) => {
+      const email = normalizeKey(row.email || row.record?.studentEmail);
       if (email) return `email:${email}`;
+
+      const name = normalizeKey(row.name);
+      if (name) return `name:${name}`;
 
       const number = String(row.number || "").trim();
       if (number && number !== "-") return `number:${number}`;
 
-      return `name:${normalizeKey(row.name)}`;
+      return `id:${row.id}`;
+    };
+
+    const getProfileStudentFallbackRow = () => {
+      if (!state.user) return null;
+
+      const number = getProfileNumber();
+      const className = getProfileClass();
+
+      if (!number && !className) return null;
+
+      const record = Object.values(state.attendance || {}).find((item) => {
+        const id = getRecordIdentity(item);
+        return id.email && id.email === normalizeKey(state.user.email);
+      }) || {};
+
+      return {
+        id: `profile:${state.user.uid}`,
+        name: getProfileName(),
+        email: state.user.email || "",
+        number: number || "-",
+        className: className || "Profil siswa",
+        record,
+        fromList: false
+      };
     };
 
     const getDisplayStudentRows = () => {
       const rows = [];
-      const usedKeys = new Set();
+      const used = new Set();
 
       state.students.forEach((student) => {
         const record = findBestRecordForStudent(student);
@@ -9000,37 +9018,39 @@
           fromList: true
         };
 
-        const key = makeRowKey(row);
-        usedKeys.add(key);
-        rows.push(row);
-      });
+        const key = makeStudentRowKey(row);
+        if (used.has(key)) return;
 
-      Object.entries(state.attendance || {}).forEach(([recordId, record]) => {
-        if (String(recordId).startsWith("log:")) return;
-
-        const row = {
-          id: recordId,
-          name: record.studentName || record.studentEmail || "Siswa QR",
-          email: record.studentEmail || record.updatedByEmail || "",
-          number: record.studentNumber || "-",
-          className: record.className || "",
-          record,
-          fromList: false
-        };
-
-        const key = makeRowKey(row);
-        if (usedKeys.has(key)) return;
-
-        usedKeys.add(key);
+        used.add(key);
         rows.push(row);
       });
 
       if (isAdmin()) {
-        (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).forEach((log) => {
-          const record = makeLocationRecordFromLog(log);
-          const cleanId = String(log.id || "").replace("log:", "").replace("stable:", "");
+        Object.entries(state.attendance || {}).forEach(([recordId, record]) => {
+          if (String(recordId).startsWith("log:")) return;
+
           const row = {
-            id: `log:${cleanId}`,
+            id: recordId,
+            name: record.studentName || record.studentEmail || "Siswa QR",
+            email: record.studentEmail || record.updatedByEmail || "",
+            number: record.studentNumber || "-",
+            className: record.className || "",
+            record,
+            fromList: false
+          };
+
+          const key = makeStudentRowKey(row);
+          if (used.has(key)) return;
+
+          used.add(key);
+          rows.push(row);
+        });
+
+        getAllLocationRecords().forEach((item) => {
+          const record = item.record;
+
+          const row = {
+            id: `log:${item.id}`,
             name: record.studentName || record.studentEmail || "Siswa QR",
             email: record.studentEmail || "",
             number: "-",
@@ -9039,34 +9059,25 @@
             fromList: false
           };
 
-          const key = makeRowKey(row);
-          if (usedKeys.has(key)) return;
+          const key = makeStudentRowKey(row);
+          if (used.has(key)) return;
 
-          usedKeys.add(key);
           state.attendance[row.id] = record;
+          used.add(key);
           rows.push(row);
         });
       }
 
       if (state.role === "siswa") {
-        const myEmail = normalizeKey(state.user?.email);
-        const myName = normalizeKey(getProfileName());
-        const alreadyListed = rows.some((row) => {
-          const rowEmail = normalizeKey(row.email || row.record?.studentEmail);
-          const rowName = normalizeKey(row.name);
-          return (myEmail && rowEmail && myEmail === rowEmail) || (myName && rowName && myName === rowName);
-        });
+        const fallback = getProfileStudentFallbackRow();
 
-        if (!alreadyListed && (getProfileNumber() || getProfileClass())) {
-          rows.push({
-            id: `profile:${state.user.uid}`,
-            name: getProfileName(),
-            email: state.user.email || "",
-            number: getProfileNumber() || "-",
-            className: getProfileClass() || "Profil siswa",
-            record: {},
-            fromList: false
-          });
+        if (fallback) {
+          const key = makeStudentRowKey(fallback);
+          const alreadyExists = rows.some((row) => makeStudentRowKey(row) === key);
+
+          if (!alreadyExists) {
+            rows.push(fallback);
+          }
         }
       }
 
@@ -9086,30 +9097,26 @@
       const list = $("studentStatusList");
       if (!list) return;
 
-      const isAdminView = isAdmin();
+      const adminView = isAdmin();
       const rows = getDisplayStudentRows();
 
       if ($("studentListHint")) {
-        $("studentListHint").textContent = isAdminView
-          ? "Daftar siswa sesuai nomor absen. Admin bisa membuka peta untuk siswa yang absen lewat QR."
-          : "Daftar siswa sesuai nomor absen. Kamu hanya bisa melihat nomor, nama, dan status absen.";
+        $("studentListHint").textContent = adminView
+          ? "Daftar siswa sesuai nomor absen. Admin bisa membuka peta lokasi jika siswa absen lewat QR."
+          : "Daftar siswa sesuai nomor absen. Kamu hanya bisa melihat nomor, nama, kelas, dan status absen.";
       }
 
       if (!rows.length) {
-        list.innerHTML = `<div class="empty">Belum ada data siswa. Isi data siswa dari admin atau isi nomor absen di profil.</div>`;
+        list.innerHTML = `<div class="empty">Belum ada data siswa. Admin bisa menambah data siswa. Siswa juga bisa mengisi nomor absen di profil.</div>`;
         return;
       }
 
       list.innerHTML = rows.map((row) => {
         const status = normalizeAttendanceStatus(row.record);
         const hasLocation = hasLocationData(row.record);
-        const canOpenLocation = hasLocation && isAdminView;
+        const canOpenLocation = hasLocation && adminView;
         const numberText = row.number === "-" ? "..." : String(row.number).padStart(2, "0");
-        const metaText = row.className
-          ? row.className
-          : row.email
-            ? row.email
-            : "Data siswa";
+        const metaText = row.className || "Data siswa";
 
         return `
           <article class="student-status-card status-${status.key}">
@@ -9247,7 +9254,6 @@
         `;
       }).join("");
 
-      renderQrLocationList();
       renderStudentStatusList();
     };
 
