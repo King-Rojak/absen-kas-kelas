@@ -5114,6 +5114,93 @@
       line-height: 1.45;
     }
 
+  
+    /* ADMIN VIEW LOKASI SISWA DARI REKAP ABSEN */
+    .student-location-link {
+      width: 100%;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: var(--text);
+      background: rgba(255, 154, 61, 0.08);
+      border: 1px solid rgba(255, 154, 61, 0.18);
+      font-size: 14px;
+      font-weight: 850;
+      transition: 0.18s ease;
+    }
+
+    .student-location-link:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 154, 61, 0.12);
+      border-color: rgba(255, 154, 61, 0.30);
+    }
+
+    .student-location-link span {
+      color: rgba(255, 220, 190, 0.78);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .attendance-compact-row.has-location {
+      background: rgba(255, 154, 61, 0.025);
+    }
+
+    .location-detail-grid {
+      align-items: stretch;
+    }
+
+    .location-detail-box {
+      display: grid;
+      gap: 14px;
+    }
+
+    .location-action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .location-map-card {
+      min-height: 460px;
+    }
+
+    .admin-location-map {
+      width: 100%;
+      min-height: 360px;
+      height: 100%;
+      border: 0;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .map-placeholder {
+      min-height: 360px;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      border-radius: 20px;
+      color: var(--muted);
+      background:
+        radial-gradient(circle at center, rgba(255, 154, 61, 0.10), transparent 36%),
+        rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .location-action-row {
+        grid-template-columns: 1fr;
+      }
+
+      .location-map-card,
+      .admin-location-map,
+      .map-placeholder {
+        min-height: 300px;
+      }
+    }
+
   </style>
 </head>
 
@@ -5330,6 +5417,7 @@
 
       <div class="tabs glass">
         <button class="tab active" data-tab="tabAbsen"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M8 6h11M8 12h11M8 18h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m3.8 6 1.2 1.2L7.5 4.7M3.8 12l1.2 1.2 2.5-2.5M3.8 18l1.2 1.2 2.5-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Absen</button>
+        <button class="tab admin-bendahara-only" data-tab="tabLokasi"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>Lokasi</button>
         <button class="tab" data-tab="tabPengajuan"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M4 7.5 12 13l8-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3.5" y="5.5" width="17" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 3.5v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Pengajuan</button>
         <button class="tab" data-tab="tabKas"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 10h4M16.5 14.5h.01M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Kas</button>
         <button class="tab" data-tab="tabSiswa"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M16.5 19.2c0-2.3-2-4.2-4.5-4.2s-4.5 1.9-4.5 4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 18c0-1.7-1.2-3.1-2.9-3.6M15.7 6.3a3 3 0 0 1 0 5.4M5 18c0-1.7 1.2-3.1 2.9-3.6M8.3 6.3a3 3 0 0 0 0 5.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Siswa</button>
@@ -5493,6 +5581,73 @@
                 <tbody id="attendanceTable"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tabLokasi" class="section admin-bendahara-only">
+        <div class="section-title">
+          <div>
+            <h2>Lokasi Absen QR</h2>
+            <p>Lihat lokasi siswa yang absen melalui QR dan deteksi lokasi.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-2 location-detail-grid">
+          <div class="card glass">
+            <div class="card-header">
+              <div>
+                <h2 id="locationStudentName">Pilih siswa dari Rekap Absen</h2>
+                <p id="locationStudentMeta">Klik nama siswa yang memiliki data lokasi.</p>
+              </div>
+            </div>
+
+            <div id="locationDetailEmpty" class="empty">
+              Belum ada lokasi yang dipilih.
+            </div>
+
+            <div id="locationDetailBox" class="location-detail-box hidden">
+              <div class="location-grid">
+                <div class="location-item">
+                  <span>Latitude</span>
+                  <strong id="adminLocationLat">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Longitude</span>
+                  <strong id="adminLocationLng">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Jarak dari sekolah</span>
+                  <strong id="adminLocationDistance">-</strong>
+                </div>
+                <div class="location-item">
+                  <span>Akurasi GPS</span>
+                  <strong id="adminLocationAccuracy">-</strong>
+                </div>
+              </div>
+
+              <div class="location-action-row">
+                <a id="adminLocationMapLink" class="btn location-map-btn" href="#" target="_blank" rel="noopener">
+                  Buka di Google Maps
+                </a>
+                <button id="copyLocationLinkBtn" class="btn" type="button">Copy Link Maps</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card glass location-map-card">
+            <div class="card-header">
+              <div>
+                <h2>Peta Lokasi</h2>
+                <p>Tampilan peta mengikuti titik lokasi siswa saat scan QR.</p>
+              </div>
+            </div>
+
+            <div id="adminMapPlaceholder" class="map-placeholder">
+              Lokasi belum dipilih.
+            </div>
+
+            <iframe id="adminLocationMapFrame" class="admin-location-map hidden" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
       </section>
@@ -7417,12 +7572,52 @@
     };
 
 
-    const renderAttendance = () => {
-      if (!state.students.length) {
-        $("attendanceTable").innerHTML = `<tr><td colspan="3"><div class="empty">Tambahkan siswa dulu.</div></td></tr>`;
+
+    const getAttendanceRecordById = (recordId) => {
+      return state.attendance?.[recordId] || null;
+    };
+
+    const hasLocationData = (record) => {
+      return Number.isFinite(Number(record?.userLat)) && Number.isFinite(Number(record?.userLng));
+    };
+
+    const openAttendanceLocation = (recordId) => {
+      const record = getAttendanceRecordById(recordId);
+
+      if (!record || !hasLocationData(record)) {
+        showToast("Data lokasi siswa belum tersedia.");
         return;
       }
 
+      const lat = Number(record.userLat);
+      const lng = Number(record.userLng);
+      const distance = Number(record.distanceMeters);
+      const accuracy = Number(record.accuracyMeters);
+      const mapsUrl = record.mapsUrl || `https://www.google.com/maps?q=${lat},${lng}`;
+      const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=18&output=embed`;
+
+      $("locationStudentName").textContent = record.studentName || "Siswa";
+      $("locationStudentMeta").textContent = `${record.date || "-"} • ${record.method === "qr_location" ? "Absen QR + Lokasi" : "Data lokasi"}`;
+
+      $("adminLocationLat").textContent = lat.toFixed(7);
+      $("adminLocationLng").textContent = lng.toFixed(7);
+      $("adminLocationDistance").textContent = Number.isFinite(distance) ? `${distance} meter` : "-";
+      $("adminLocationAccuracy").textContent = Number.isFinite(accuracy) ? `± ${Math.round(accuracy)} meter` : "-";
+
+      $("adminLocationMapLink").href = mapsUrl;
+      $("adminLocationMapFrame").src = embedUrl;
+
+      $("locationDetailEmpty").classList.add("hidden");
+      $("locationDetailBox").classList.remove("hidden");
+      $("adminMapPlaceholder").classList.add("hidden");
+      $("adminLocationMapFrame").classList.remove("hidden");
+
+      switchTab("tabLokasi");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+
+    const renderAttendance = () => {
       const disabled = isAdmin() ? "" : "disabled";
       const statusLabelMap = {
         hadir: "Hadir",
@@ -7431,25 +7626,63 @@
         alfa: "Alfa"
       };
 
-      $("attendanceTable").innerHTML = state.students.map((student) => {
+      const studentRows = state.students.map((student) => {
         const record = state.attendance[student.id] || {};
+        return {
+          id: student.id,
+          name: student.name,
+          number: student.number || null,
+          className: student.className || "",
+          record,
+          isFromStudentList: true
+        };
+      });
+
+      const knownIds = new Set(state.students.map((student) => student.id));
+      const extraRows = Object.entries(state.attendance || {})
+        .filter(([recordId]) => !knownIds.has(recordId))
+        .map(([recordId, record]) => ({
+          id: recordId,
+          name: record.studentName || record.byName || record.studentEmail || "Siswa QR",
+          number: record.studentNumber || null,
+          className: record.className || "",
+          record,
+          isFromStudentList: false
+        }));
+
+      const rows = [...studentRows, ...extraRows];
+
+      if (!rows.length) {
+        $("attendanceTable").innerHTML = `<tr><td colspan="3"><div class="empty">Tambahkan siswa dulu.</div></td></tr>`;
+        return;
+      }
+
+      $("attendanceTable").innerHTML = rows.map((row) => {
+        const record = row.record || {};
         const status = record.status || "hadir";
         const note = record.note || "";
+        const hasLocation = hasLocationData(record);
+        const nameContent = hasLocation && (isAdmin() || canManageCash())
+          ? `<button type="button" class="student-location-link" data-open-attendance-location="${row.id}">
+              ${safeText(row.name)}
+              <span>Lihat lokasi</span>
+            </button>`
+          : `<div class="student-name-compact">${safeText(row.name)}</div>`;
 
         return `
-          <tr class="attendance-compact-row">
+          <tr class="attendance-compact-row ${hasLocation ? "has-location" : ""}">
             <td data-label="Nama">
-              <div class="student-name-compact">${safeText(student.name)}</div>
+              ${nameContent}
             </td>
             <td data-label="Status">
-              <div class="status-custom-select ${disabled ? "is-disabled" : ""}" data-status-group="${student.id}" data-current-status="${safeText(status)}">
-                <button type="button" class="status-custom-trigger status-${safeText(status)}" data-status-trigger="${student.id}" ${disabled}>
+              <div class="status-custom-select ${disabled ? "is-disabled" : ""}" data-status-group="${row.id}" data-current-status="${safeText(status)}">
+                <button type="button" class="status-custom-trigger status-${safeText(status)}" data-status-trigger="${row.id}" ${disabled}>
                   <span class="status-dot"></span>
                   <span class="status-current-text">${safeText(statusLabelMap[status] || "Hadir")}</span>
                   <span class="status-chevron"></span>
                 </button>
 
-                <div class="status-custom-menu hidden" data-status-menu="${student.id}">
+                <div class="status-custom-menu hidden" data-status-menu="${row.id}">
                   <button type="button" class="status-custom-option ${status === "hadir" ? "active" : ""}" data-status-value="hadir" data-status-label="Hadir">
                     <span class="status-dot status-dot-hadir"></span>Hadir
                   </button>
@@ -7466,7 +7699,7 @@
               </div>
             </td>
             <td data-label="Keterangan">
-              <input class="attendance-row-note" data-attendance-note="${student.id}" value="${safeText(note)}" placeholder="Opsional" ${disabled} />
+              <input class="attendance-row-note" data-attendance-note="${row.id}" value="${safeText(note)}" placeholder="Opsional" ${disabled} />
             </td>
           </tr>
         `;
@@ -7976,6 +8209,32 @@
     $("submitManualQrBtn")?.addEventListener("click", async () => {
       const code = $("manualQrCodeInput").value.trim();
       await submitQrAttendance(code);
+    });
+
+
+
+    document.addEventListener("click", (event) => {
+      const locationButton = event.target.closest("[data-open-attendance-location]");
+      if (!locationButton) return;
+
+      event.preventDefault();
+      const recordId = locationButton.dataset.openAttendanceLocation;
+      openAttendanceLocation(recordId);
+    });
+
+    $("copyLocationLinkBtn")?.addEventListener("click", async () => {
+      const link = $("adminLocationMapLink")?.href || "";
+      if (!link || link === "#") {
+        showToast("Belum ada link lokasi.");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast("Link lokasi berhasil disalin.");
+      } catch {
+        showToast("Gagal menyalin link lokasi.");
+      }
     });
 
 
