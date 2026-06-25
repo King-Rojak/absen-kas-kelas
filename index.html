@@ -5313,6 +5313,15 @@
       }
     }
 
+  
+    .qr-log-card {
+      margin-top: 16px;
+    }
+
+    .qr-log-card .table-wrap {
+      max-height: none;
+    }
+
   </style>
 </head>
 
@@ -5763,6 +5772,29 @@
             </div>
 
             <iframe id="adminLocationMapFrame" class="admin-location-map hidden" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+
+        <div class="card glass qr-log-card">
+          <div class="card-header">
+            <div>
+              <h2>Riwayat Lokasi QR</h2>
+              <p>Semua lokasi hasil scan QR pada tanggal yang dipilih.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Status</th>
+                  <th>Jarak</th>
+                  <th>Lokasi</th>
+                </tr>
+              </thead>
+              <tbody id="qrLocationLogsTable"></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -6390,6 +6422,7 @@
       typingLoopTimer: null,
       typingPhraseIndex: 0,
       activeSession: null,
+      qrLocationLogs: [],
       accounts: [],
       logs: [],
       unsubscribers: []
@@ -7224,6 +7257,7 @@
       }));
 
       listenAttendanceByDate($("attendanceDate").value);
+      listenQrLocationLogsByDate($("attendanceDate").value);
       listenAttendanceRequests();
 
       if (isAdmin()) {
@@ -7250,6 +7284,38 @@
     };
 
     let attendanceUnsubscribe = null;
+
+
+    let qrLogsUnsubscribe = null;
+
+    const listenQrLocationLogsByDate = (date) => {
+      if (qrLogsUnsubscribe) qrLogsUnsubscribe();
+
+      if (!(isAdmin() || canManageCash())) {
+        state.qrLocationLogs = [];
+        return;
+      }
+
+      const logsQuery = query(
+        collection(db, "qrAttendanceLogs"),
+        where("date", "==", date)
+      );
+
+      qrLogsUnsubscribe = onSnapshot(logsQuery, (snapshot) => {
+        state.qrLocationLogs = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data()
+        }));
+
+        renderAttendance();
+        renderQrLocationList();
+      }, (error) => {
+        console.warn("Gagal memuat log lokasi QR:", error);
+      });
+
+      state.unsubscribers.push(qrLogsUnsubscribe);
+    };
+
 
     const listenAttendanceByDate = (date) => {
       if (attendanceUnsubscribe) attendanceUnsubscribe();
@@ -7650,6 +7716,22 @@
       });
 
       if (distance > Number(session.radiusMeters)) {
+        await setDoc(doc(db, "qrStudentLocations", `${session.date}_${state.user.uid}`), {
+          sessionCode: code,
+          date: session.date,
+          studentUid: state.user.uid,
+          studentEmail: state.user.email,
+          studentName: getProfileName(),
+          status: "rejected",
+          distanceMeters: distance,
+          radiusMeters: Number(session.radiusMeters),
+          accuracyMeters: accuracy,
+          userLat,
+          userLng,
+          mapsUrl: `https://www.google.com/maps?q=${userLat},${userLng}`,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
         await addDoc(collection(db, "qrAttendanceLogs"), {
           sessionCode: code,
           date: session.date,
@@ -7694,6 +7776,22 @@
         updatedByUid: state.user.uid,
         updatedByEmail: state.user.email,
         updatedByName: getProfileName(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      await setDoc(doc(db, "qrStudentLocations", `${session.date}_${state.user.uid}`), {
+        sessionCode: code,
+        date: session.date,
+        studentUid: state.user.uid,
+        studentEmail: state.user.email,
+        studentName,
+        status: "accepted",
+        distanceMeters: distance,
+        radiusMeters: Number(session.radiusMeters),
+        accuracyMeters: accuracy,
+        userLat,
+        userLng,
+        mapsUrl: `https://www.google.com/maps?q=${userLat},${userLng}`,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
@@ -7843,7 +7941,8 @@
         hadir: "Hadir",
         izin: "Izin",
         sakit: "Sakit",
-        alfa: "Alfa"
+        alfa: "Alfa",
+        ditolak: "Ditolak"
       };
 
       const studentRows = state.students.map((student) => {
@@ -7859,7 +7958,7 @@
       });
 
       const knownIds = new Set(state.students.map((student) => student.id));
-      const extraRows = Object.entries(state.attendance || {})
+      const extraAttendanceRows = Object.entries(state.attendance || {})
         .filter(([recordId]) => !knownIds.has(recordId))
         .map(([recordId, record]) => ({
           id: recordId,
@@ -7870,7 +7969,28 @@
           isFromStudentList: false
         }));
 
-      const rows = [...studentRows, ...extraRows];
+      const logRows = (state.qrLocationLogs || [])
+        .filter((log) => Number.isFinite(Number(log.userLat)) && Number.isFinite(Number(log.userLng)))
+        .filter((log) => {
+          const alreadyInAttendance = Object.values(state.attendance || {}).some((record) => {
+            return record?.studentUid === log.studentUid || record?.studentEmail === log.studentEmail;
+          });
+          return !alreadyInAttendance;
+        })
+        .map((log) => ({
+          id: `log:${log.id}`,
+          name: log.studentName || log.studentEmail || "Siswa QR",
+          number: null,
+          className: "",
+          record: makeLocationRecordFromLog(log),
+          isFromStudentList: false
+        }));
+
+      logRows.forEach((row) => {
+        state.attendance[row.id] = row.record;
+      });
+
+      const rows = [...studentRows, ...extraAttendanceRows, ...logRows];
 
       if (!rows.length) {
         $("attendanceTable").innerHTML = `<tr><td colspan="3"><div class="empty">Tambahkan siswa dulu.</div></td></tr>`;
@@ -7926,6 +8046,8 @@
           </tr>
         `;
       }).join("");
+
+      renderQrLocationList();
     };
 
     const renderCash = () => {
@@ -8483,6 +8605,13 @@
 
 
     document.addEventListener("click", (event) => {
+      const qrLogButton = event.target.closest("[data-open-qr-location-log]");
+      if (qrLogButton) {
+        event.preventDefault();
+        openQrLocationLog(qrLogButton.dataset.openQrLocationLog);
+        return;
+      }
+
       const locationButton = event.target.closest("[data-open-attendance-location]");
       if (!locationButton) return;
 
