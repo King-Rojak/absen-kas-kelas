@@ -5912,6 +5912,125 @@
       }
     }
 
+  
+    /* FIX FINAL: TAB DAFTAR SISWA BERSIH */
+    #tabLokasi .location-detail-grid,
+    #tabLokasi .qr-log-card,
+    #tabLokasi .location-map-card,
+    #tabLokasi .location-detail-box,
+    #tabLokasi #qrLocationLogsTable,
+    #tabLokasi #locationDetailEmpty,
+    #tabLokasi #adminMapPlaceholder,
+    #tabLokasi #adminLocationMapFrame {
+      display: none !important;
+    }
+
+    #tabLokasi {
+      padding-bottom: 28px;
+    }
+
+    #tabLokasi .student-status-list {
+      margin-top: 12px;
+    }
+
+    #tabLokasi .student-status-card {
+      grid-template-columns: 52px minmax(0, 1fr) auto !important;
+      align-items: center !important;
+      min-height: 66px !important;
+      padding: 12px !important;
+    }
+
+    #tabLokasi .student-status-open {
+      grid-column: 1 / -1;
+      width: 100%;
+      min-height: 40px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 760px) {
+      #tabLokasi .student-status-card {
+        grid-template-columns: 48px minmax(0, 1fr) !important;
+      }
+
+      #tabLokasi .student-status-side {
+        grid-column: 2 !important;
+        justify-items: start !important;
+      }
+
+      #tabLokasi .student-status-open {
+        grid-column: 1 / -1 !important;
+      }
+    }
+
+  
+    /* FINAL DAFTAR STATUS SISWA */
+    #tabLokasi .section-title {
+      margin-bottom: 14px;
+    }
+
+    #tabLokasi .student-list-toolbar {
+      margin-bottom: 12px;
+    }
+
+    #tabLokasi .student-status-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    #tabLokasi .student-status-card {
+      position: relative;
+      overflow: hidden;
+      grid-template-columns: 54px minmax(0, 1fr) auto !important;
+      min-height: 72px !important;
+      padding: 13px !important;
+      border-radius: 22px !important;
+    }
+
+    #tabLokasi .student-status-number {
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    #tabLokasi .student-status-main h3 {
+      font-size: 15px !important;
+      margin-bottom: 5px !important;
+    }
+
+    #tabLokasi .student-status-main p {
+      font-size: 12px !important;
+    }
+
+    #tabLokasi .student-status-side {
+      min-width: auto !important;
+    }
+
+    #tabLokasi .student-status-pill {
+      white-space: nowrap;
+    }
+
+    #tabLokasi .student-status-open {
+      grid-column: 1 / -1;
+      width: 100%;
+      min-height: 40px;
+      margin-top: 2px;
+    }
+
+    @media (max-width: 760px) {
+      #tabLokasi .student-status-card {
+        grid-template-columns: 48px minmax(0, 1fr) !important;
+        align-items: start !important;
+      }
+
+      #tabLokasi .student-status-side {
+        grid-column: 2 !important;
+        justify-items: start !important;
+      }
+
+      #tabLokasi .student-status-open {
+        grid-column: 1 / -1 !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -6385,15 +6504,16 @@
         <div class="section-title">
           <div>
             <h2>Daftar Siswa</h2>
-            <p>Lihat nomor absen, nama siswa, dan status absen berdasarkan tanggal yang dipilih.</p>
+            <p id="studentListHint">Daftar status siswa berdasarkan tanggal yang dipilih.</p>
           </div>
         </div>
 
         <div class="student-list-toolbar glass">
           <div>
             <h3>Daftar Status Siswa</h3>
-            <p id="studentListHint">Daftar siswa berurutan sesuai nomor absen. Siswa hanya bisa melihat status, admin bisa membuka peta lokasi jika tersedia.</p>
+            <p>Disusun otomatis sesuai nomor absen dari kecil ke besar.</p>
           </div>
+
           <div class="student-status-legend">
             <span class="legend-item legend-hadir">Hadir</span>
             <span class="legend-item legend-sakit">Sakit</span>
@@ -6403,7 +6523,6 @@
         </div>
 
         <div id="studentStatusList" class="student-status-list"></div>
-
       </section>
 
 
@@ -8848,7 +8967,7 @@
         });
 
       if (!logs.length) {
-        table.innerHTML = `<tr><td colspan="4"><div class="empty">Belum ada lokasi QR yang tersimpan. Pastikan Firestore Rules terbaru sudah dipasang.</div></td></tr>`;
+        table.innerHTML = `<tr><td colspan="4"><div class="empty">Belum ada data status siswa.</div></td></tr>`;
         return;
       }
 
@@ -9082,14 +9201,17 @@
       }
 
       return rows.sort((a, b) => {
-        const na = Number(a.number);
-        const nb = Number(b.number);
+        const cleanNumber = (value) => {
+          const number = Number(String(value || "").replace(/[^0-9]/g, ""));
+          return Number.isFinite(number) && number > 0 ? number : 9999;
+        };
 
-        if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-        if (Number.isFinite(na)) return -1;
-        if (Number.isFinite(nb)) return 1;
+        const na = cleanNumber(a.number);
+        const nb = cleanNumber(b.number);
 
-        return String(a.name).localeCompare(String(b.name));
+        if (na !== nb) return na - nb;
+
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
     };
 
@@ -9102,8 +9224,8 @@
 
       if ($("studentListHint")) {
         $("studentListHint").textContent = adminView
-          ? "Daftar siswa sesuai nomor absen. Admin bisa membuka peta lokasi jika siswa absen lewat QR."
-          : "Daftar siswa sesuai nomor absen. Kamu hanya bisa melihat nomor, nama, kelas, dan status absen.";
+          ? "Daftar status siswa sesuai nomor absen. Admin bisa membuka peta jika data lokasi tersedia."
+          : "Daftar status siswa sesuai nomor absen. Kamu hanya bisa melihat nomor, nama, kelas, dan status absen.";
       }
 
       if (!rows.length) {
@@ -9132,7 +9254,7 @@
             </div>
 
             ${canOpenLocation ? `
-              <button type="button" class="student-status-open" data-open-attendance-location="${safeText(row.id)}">
+              <button type="button" class="student-status-open" data-open-student-map="${safeText(row.id)}">
                 Buka Peta
               </button>
             ` : ""}
@@ -9508,6 +9630,31 @@
 
     $("logoutBtn")?.addEventListener("click", handleLogout);
     $("profileLogoutBtn")?.addEventListener("click", handleLogout);
+
+
+    document.addEventListener("click", (event) => {
+      const mapButton = event.target.closest("[data-open-student-map]");
+      if (mapButton) {
+        event.preventDefault();
+
+        if (!isAdmin()) {
+          showToast("Lokasi hanya bisa dilihat admin.");
+          return;
+        }
+
+        const recordId = mapButton.dataset.openStudentMap;
+        const record = getAttendanceRecordById(recordId);
+
+        if (!record || !hasLocationData(record)) {
+          showToast("Data lokasi siswa belum tersedia.");
+          return;
+        }
+
+        openLocationInNewTab(record);
+        return;
+      }
+    });
+
 
     document.addEventListener("click", (event) => {
       const profileTrigger = event.target.closest("#openProfileBtn, [data-open-profile-modal]");
