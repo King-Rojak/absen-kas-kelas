@@ -5610,11 +5610,12 @@
                 <label>
                   Aktif sampai
                   <input id="sessionEndInput" type="time" required />
-                  <span class="field-help">Format 24 jam. Jam 1 siang = 13:00. Untuk tes malam, pakai 23:59.</span>
+                  <span class="field-help">Format 24 jam. Jam 1 siang = 13:00. QR aktif sampai jam yang Kamu isi di sini.</span>
                 </label>
               </div>
 
               <button id="useSchoolLocationBtn" class="btn" type="button">Pakai Lokasi Sekarang</button>
+              <button id="setOneHourQrBtn" class="btn" type="button">Set 1 Jam dari Sekarang</button>
               <button class="btn btn-primary" type="submit">Buat QR Absen</button>
             </form>
 
@@ -6433,6 +6434,7 @@
       activeSession: null,
       qrLocationLogs: [],
       qrStudentLocations: [],
+      qrTimeRefreshTimer: null,
       accounts: [],
       logs: [],
       unsubscribers: []
@@ -7521,15 +7523,68 @@
       });
     };
 
+    const parseQrTimeToMinutes = (time) => {
+      const safeTime = String(time || "23:59").trim();
+      const [hourText, minuteText = "0"] = safeTime.split(":");
+      const hour = Number(hourText);
+      const minute = Number(minuteText);
+
+      if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+        return 23 * 60 + 59;
+      }
+
+      return (hour * 60) + minute;
+    };
+
+    const getCurrentLocalMinutes = () => {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    };
+
+    const isQrExpiredByTime = (session) => {
+      if (!session?.endTime) return false;
+      if (session.date !== today()) return true;
+
+      return getCurrentLocalMinutes() > parseQrTimeToMinutes(session.endTime);
+    };
+
     const getEndDateTime = (date, time) => {
-      const safeTime = time || "23:59";
-      return new Date(`${date}T${safeTime}:00`);
+      const safeTime = String(time || "23:59").trim();
+      const [hourText, minuteText = "0"] = safeTime.split(":");
+      const year = Number(String(date).slice(0, 4));
+      const month = Number(String(date).slice(5, 7)) - 1;
+      const day = Number(String(date).slice(8, 10));
+      const hour = Number(hourText);
+      const minute = Number(minuteText);
+
+      return new Date(year, month, day, hour, minute, 59, 999);
+    };
+
+    const getQrTimeStatusText = (endTime) => {
+      const endMinutes = parseQrTimeToMinutes(endTime);
+      const nowMinutes = getCurrentLocalMinutes();
+      const remaining = endMinutes - nowMinutes;
+
+      if (remaining < 0) {
+        return "Waktu QR sudah lewat.";
+      }
+
+      if (remaining === 0) {
+        return "QR aktif sampai akhir menit ini.";
+      }
+
+      const hours = Math.floor(remaining / 60);
+      const minutes = remaining % 60;
+
+      if (hours > 0 && minutes > 0) return `Sisa waktu ${hours} jam ${minutes} menit.`;
+      if (hours > 0) return `Sisa waktu ${hours} jam.`;
+      return `Sisa waktu ${minutes} menit.`;
     };
 
     const getEndTimeMessage = (endTime) => {
       if (!endTime) return "Belum ada batas waktu.";
 
-      const [hourText, minuteText] = endTime.split(":");
+      const [hourText, minuteText] = String(endTime).split(":");
       const hour = Number(hourText);
       const minute = Number(minuteText || 0);
 
@@ -7539,7 +7594,7 @@
       const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
       const paddedMinute = String(minute).padStart(2, "0");
 
-      return `Aktif sampai ${endTime} atau jam ${displayHour}:${paddedMinute} ${period}.`;
+      return `Aktif sampai ${endTime} atau jam ${displayHour}:${paddedMinute} ${period}. ${getQrTimeStatusText(endTime)}`;
     };
 
 
@@ -7574,12 +7629,7 @@
     const isQrSessionStillValid = (session) => {
       if (!session?.active || !session?.date || !session?.endTime) return false;
       if (session.date !== getTodayDate()) return false;
-
-      const endDateTime = session.expiresAtMs
-        ? new Date(Number(session.expiresAtMs))
-        : getEndDateTime(session.date, session.endTime);
-
-      return new Date() <= endDateTime;
+      return !isQrExpiredByTime(session);
     };
 
     const loadActiveQrSession = async () => {
@@ -7647,6 +7697,17 @@
       $("qrSessionImage").src = qrUrl;
       $("qrSessionCode").textContent = session.code;
       $("qrSessionMeta").textContent = `Tanggal ${session.date}. Radius ${session.radiusMeters} meter. ${getEndTimeMessage(session.endTime)}`;
+
+      if (state.qrTimeRefreshTimer) clearInterval(state.qrTimeRefreshTimer);
+      state.qrTimeRefreshTimer = setInterval(() => {
+        if (!state.activeSession?.code) return;
+        if (!isQrSessionStillValid(state.activeSession)) {
+          renderQrSession(null);
+          clearActiveQrSessionCache();
+          return;
+        }
+        $("qrSessionMeta").textContent = `Tanggal ${state.activeSession.date}. Radius ${state.activeSession.radiusMeters} meter. ${getEndTimeMessage(state.activeSession.endTime)}`;
+      }, 60000);
       result.classList.remove("hidden");
     };
 
@@ -7729,13 +7790,8 @@
         return;
       }
 
-      const now = new Date();
-      const endDateTime = session.expiresAtMs
-        ? new Date(Number(session.expiresAtMs))
-        : getEndDateTime(session.date, session.endTime);
-
-      if (now > endDateTime) {
-        showToast(`Sesi QR sudah melewati batas waktu. Catatan: jam 1 siang harus 13:00, bukan 01:00.`);
+      if (isQrExpiredByTime(session)) {
+        showToast(`Sesi QR sudah melewati batas waktu. Batas QR: ${session.endTime}. Sekarang: ${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}.`);
         return;
       }
 
@@ -8610,6 +8666,19 @@
     });
 
 
+
+    $("setOneHourQrBtn")?.addEventListener("click", () => {
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+
+      $("sessionEndInput").value = `${hh}:${mm}`;
+      showToast(`Waktu QR diatur sampai ${hh}:${mm}.`);
+    });
+
+
     $("useSchoolLocationBtn")?.addEventListener("click", async () => {
       try {
         showToast("Mengambil lokasi...");
@@ -8650,8 +8719,8 @@
 
       const endDateTime = getEndDateTime(date, endTime);
 
-      if (endDateTime <= new Date()) {
-        showToast("Batas waktu sudah lewat. Jam 1 siang harus ditulis 13:00.");
+      if (date === today() && getCurrentLocalMinutes() > parseQrTimeToMinutes(endTime)) {
+        showToast("Batas waktu QR sudah lewat. Ubah Aktif sampai ke jam yang lebih besar.");
         return;
       }
 
@@ -8662,6 +8731,7 @@
         schoolLng,
         radiusMeters,
         endTime,
+        endTimeMinutes: parseQrTimeToMinutes(endTime),
         expiresAtMs: endDateTime.getTime(),
         active: true,
         createdByUid: state.user.uid,
@@ -8677,6 +8747,7 @@
         schoolLng,
         radiusMeters,
         endTime,
+        endTimeMinutes: parseQrTimeToMinutes(endTime),
         expiresAtMs: endDateTime.getTime(),
         active: true
       };
