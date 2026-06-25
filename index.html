@@ -5322,6 +5322,15 @@
       max-height: none;
     }
 
+  
+    .qr-log-card {
+      margin-top: 16px;
+    }
+
+    .qr-log-card .table-wrap {
+      max-height: none;
+    }
+
   </style>
 </head>
 
@@ -6423,6 +6432,7 @@
       typingPhraseIndex: 0,
       activeSession: null,
       qrLocationLogs: [],
+      qrStudentLocations: [],
       accounts: [],
       logs: [],
       unsubscribers: []
@@ -7258,6 +7268,7 @@
 
       listenAttendanceByDate($("attendanceDate").value);
       listenQrLocationLogsByDate($("attendanceDate").value);
+      listenQrStudentLocationsByDate($("attendanceDate").value);
       listenAttendanceRequests();
 
       if (isAdmin()) {
@@ -7284,6 +7295,38 @@
     };
 
     let attendanceUnsubscribe = null;
+
+
+
+    let qrStudentLocationsUnsubscribe = null;
+
+    const listenQrStudentLocationsByDate = (date) => {
+      if (qrStudentLocationsUnsubscribe) qrStudentLocationsUnsubscribe();
+
+      if (!(isAdmin() || canManageCash())) {
+        state.qrStudentLocations = [];
+        return;
+      }
+
+      const stableQuery = query(
+        collection(db, "qrStudentLocations"),
+        where("date", "==", date)
+      );
+
+      qrStudentLocationsUnsubscribe = onSnapshot(stableQuery, (snapshot) => {
+        state.qrStudentLocations = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data()
+        }));
+
+        renderAttendance();
+        renderQrLocationList();
+      }, (error) => {
+        console.warn("Gagal memuat lokasi siswa QR:", error);
+      });
+
+      state.unsubscribers.push(qrStudentLocationsUnsubscribe);
+    };
 
 
     let qrLogsUnsubscribe = null;
@@ -7812,7 +7855,7 @@
       });
 
       await addLog("ABSEN_QR_LOKASI", `${studentName} absen QR. Jarak ${distance} meter.`);
-      $("qrScanInfo").textContent = `Berhasil absen hadir. Jarak Kamu ${distance} meter dari sekolah.`;
+      $("qrScanInfo").textContent = `Berhasil absen hadir. Lokasi sudah dikirim ke admin. Jarak Kamu ${distance} meter dari sekolah.`;
       showToast("Absen QR berhasil disimpan.");
       stopQrScanner();
     };
@@ -7935,6 +7978,104 @@
     };
 
 
+
+    const makeLocationRecordFromLog = (log) => {
+      return {
+        studentName: log.studentName || log.studentEmail || "Siswa",
+        studentEmail: log.studentEmail || "",
+        studentUid: log.studentUid || "",
+        date: log.date || getTodayDate(),
+        method: "qr_location",
+        status: log.status === "accepted" ? "hadir" : "ditolak",
+        distanceMeters: log.distanceMeters,
+        accuracyMeters: log.accuracyMeters,
+        userLat: log.userLat,
+        userLng: log.userLng,
+        mapsUrl: log.mapsUrl || (
+          Number.isFinite(Number(log.userLat)) && Number.isFinite(Number(log.userLng))
+            ? `https://www.google.com/maps?q=${log.userLat},${log.userLng}`
+            : ""
+        )
+      };
+    };
+
+    const getAllQrLocationSources = () => {
+      const map = new Map();
+
+      (state.qrLocationLogs || []).forEach((item) => {
+        if (!Number.isFinite(Number(item.userLat)) || !Number.isFinite(Number(item.userLng))) return;
+        const key = item.studentUid || item.studentEmail || item.id;
+        map.set(key, { id: `log:${item.id}`, source: "log", ...item });
+      });
+
+      (state.qrStudentLocations || []).forEach((item) => {
+        if (!Number.isFinite(Number(item.userLat)) || !Number.isFinite(Number(item.userLng))) return;
+        const key = item.studentUid || item.studentEmail || item.id;
+        map.set(key, { id: `stable:${item.id}`, source: "stable", ...item });
+      });
+
+      return Array.from(map.values());
+    };
+
+    const openQrLocationLog = (rawId) => {
+      const idText = String(rawId || "");
+      const cleanId = idText.replace("log:", "").replace("stable:", "");
+
+      const log =
+        state.qrLocationLogs.find((item) => item.id === cleanId) ||
+        state.qrStudentLocations.find((item) => item.id === cleanId);
+
+      if (!log) {
+        showToast("Log lokasi tidak ditemukan.");
+        return;
+      }
+
+      const record = makeLocationRecordFromLog(log);
+      const tempId = `log:${cleanId}`;
+      state.attendance[tempId] = record;
+      openAttendanceLocation(tempId);
+    };
+
+    const renderQrLocationList = () => {
+      const table = $("qrLocationLogsTable");
+      if (!table) return;
+
+      const logs = getAllQrLocationSources()
+        .sort((a, b) => {
+          const ta = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+          const tb = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+          return tb - ta;
+        });
+
+      if (!logs.length) {
+        table.innerHTML = `<tr><td colspan="4"><div class="empty">Belum ada lokasi QR yang tersimpan. Pastikan Firestore Rules terbaru sudah dipasang.</div></td></tr>`;
+        return;
+      }
+
+      table.innerHTML = logs.map((log) => {
+        const distance = Number(log.distanceMeters);
+        const accepted = log.status === "accepted";
+
+        return `
+          <tr>
+            <td>${safeText(log.studentName || log.studentEmail || "Siswa")}</td>
+            <td>
+              <span class="location-badge ${accepted ? "accepted" : "rejected"}">
+                ${accepted ? "Diterima" : "Ditolak"}
+              </span>
+            </td>
+            <td>${Number.isFinite(distance) ? `${distance} meter` : "-"}</td>
+            <td>
+              <button class="btn btn-small" type="button" data-open-qr-location-log="${safeText(log.id)}">
+                Lihat Peta
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    };
+
+
     const renderAttendance = () => {
       const disabled = isAdmin() ? "" : "disabled";
       const statusLabelMap = {
@@ -7969,7 +8110,7 @@
           isFromStudentList: false
         }));
 
-      const logRows = (state.qrLocationLogs || [])
+      const logRows = getAllQrLocationSources()
         .filter((log) => Number.isFinite(Number(log.userLat)) && Number.isFinite(Number(log.userLng)))
         .filter((log) => {
           const alreadyInAttendance = Object.values(state.attendance || {}).some((record) => {
@@ -8635,6 +8776,22 @@
       }
     });
 
+
+
+    document.addEventListener("click", (event) => {
+      const qrLogButton = event.target.closest("[data-open-qr-location-log]");
+      if (qrLogButton) {
+        event.preventDefault();
+        openQrLocationLog(qrLogButton.dataset.openQrLocationLog);
+        return;
+      }
+
+      const locationButton = event.target.closest("[data-open-attendance-location]");
+      if (!locationButton) return;
+
+      event.preventDefault();
+      openAttendanceLocation(locationButton.dataset.openAttendanceLocation);
+    });
 
     $("saveAttendanceBtn").addEventListener("click", async () => {
       if (!isAdmin()) return;
