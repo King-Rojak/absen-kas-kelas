@@ -5331,10 +5331,580 @@
       max-height: none;
     }
 
+  
+    /* HALAMAN BARU DETAIL PETA LOKASI */
+    .location-page {
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+      padding: 28px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255, 109, 64, 0.18), transparent 32%),
+        radial-gradient(circle at 80% 0%, rgba(255, 170, 75, 0.14), transparent 30%),
+        linear-gradient(180deg, #11131c, #070913 70%);
+    }
+
+    .location-page.hidden {
+      display: none !important;
+    }
+
+    .location-page-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    }
+
+    .location-page-shell {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .location-page-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+      padding: 22px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.065);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(18px);
+    }
+
+    .location-page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 850;
+      color: rgba(255, 224, 205, 0.95);
+      background: rgba(255, 119, 71, 0.12);
+      border: 1px solid rgba(255, 138, 76, 0.24);
+    }
+
+    .location-page-badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ff4d3d, #ffad45);
+      box-shadow: 0 0 18px rgba(255, 109, 64, 0.75);
+    }
+
+    .location-page-top h1 {
+      margin: 16px 0 8px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 0.96;
+      letter-spacing: -0.055em;
+    }
+
+    .location-page-top p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    .map-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.82);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      white-space: nowrap;
+    }
+
+    .map-status-badge.accepted {
+      color: #d7ffe6;
+      background: rgba(52, 211, 153, 0.14);
+      border-color: rgba(52, 211, 153, 0.32);
+    }
+
+    .map-status-badge.rejected {
+      color: #ffe1e5;
+      background: rgba(255, 78, 94, 0.14);
+      border-color: rgba(255, 78, 94, 0.32);
+    }
+
+    .location-page-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .location-page-map-card,
+    .location-page-detail-card {
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.065);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.30);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .location-page-map-card {
+      min-height: 640px;
+      padding: 12px;
+    }
+
+    .location-page-map {
+      width: 100%;
+      height: 100%;
+      min-height: 616px;
+      border: 0;
+      border-radius: 22px;
+      background: rgba(0,0,0,0.22);
+    }
+
+    .location-page-detail-card {
+      padding: 22px;
+    }
+
+    .location-page-detail-card h2 {
+      margin: 0 0 16px;
+      font-size: 24px;
+      letter-spacing: -0.035em;
+    }
+
+    .map-detail-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .map-detail-item {
+      padding: 13px 14px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .map-detail-item span {
+      display: block;
+      margin-bottom: 6px;
+      color: rgba(255,255,255,0.50);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .map-detail-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .map-page-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .map-page-actions .btn {
+      width: 100%;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .map-page-note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 920px) {
+      .location-page {
+        padding: 14px;
+      }
+
+      .location-page-top {
+        flex-direction: column;
+        border-radius: 24px;
+      }
+
+      .location-page-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .location-page-map-card {
+        min-height: 420px;
+      }
+
+      .location-page-map {
+        min-height: 400px;
+      }
+    }
+
+  
+    body.is-map-page #appPage,
+    body.is-map-page #loginPage,
+    body.is-map-page #authLoading {
+      display: none !important;
+    }
+
+  
+    /* DAFTAR SISWA + STATUS ABSEN */
+    .student-list-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 24px;
+      margin-bottom: 16px;
+    }
+
+    .student-list-toolbar h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .student-list-toolbar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .student-status-legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .legend-hadir {
+      color: rgba(211, 255, 226, 0.95);
+      background: rgba(52, 211, 153, 0.10);
+      border-color: rgba(52, 211, 153, 0.22);
+    }
+
+    .legend-sakit {
+      color: rgba(255, 241, 190, 0.96);
+      background: rgba(245, 158, 11, 0.10);
+      border-color: rgba(245, 158, 11, 0.24);
+    }
+
+    .legend-bolos {
+      color: rgba(255, 215, 218, 0.96);
+      background: rgba(239, 68, 68, 0.10);
+      border-color: rgba(239, 68, 68, 0.24);
+    }
+
+    .legend-belum {
+      color: rgba(235, 238, 245, 0.78);
+      background: rgba(0, 0, 0, 0.22);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .student-status-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .student-status-card {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 76px;
+      padding: 13px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.045);
+      transition: 0.18s ease;
+    }
+
+    .student-status-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .student-status-card.status-hadir {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.11), rgba(255,255,255,0.035));
+      border-color: rgba(52, 211, 153, 0.20);
+    }
+
+    .student-status-card.status-sakit {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(255,255,255,0.035));
+      border-color: rgba(245, 158, 11, 0.22);
+    }
+
+    .student-status-card.status-bolos {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(255,255,255,0.035));
+      border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    .student-status-card.status-belum {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.26), rgba(255,255,255,0.028));
+      border-color: rgba(255,255,255,0.075);
+    }
+
+    .student-status-card.status-izin {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.11), rgba(255,255,255,0.035));
+      border-color: rgba(59, 130, 246, 0.20);
+    }
+
+    .student-status-number {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: var(--text);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-weight: 950;
+      font-size: 13px;
+    }
+
+    .student-status-main {
+      min-width: 0;
+    }
+
+    .student-status-main h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      overflow-wrap: anywhere;
+    }
+
+    .student-status-main p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .student-status-side {
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+      min-width: 118px;
+    }
+
+    .student-status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .student-status-pill.status-hadir {
+      color: rgba(211, 255, 226, 0.96);
+      background: rgba(52, 211, 153, 0.13);
+      border-color: rgba(52, 211, 153, 0.25);
+    }
+
+    .student-status-pill.status-sakit {
+      color: rgba(255, 241, 190, 0.96);
+      background: rgba(245, 158, 11, 0.13);
+      border-color: rgba(245, 158, 11, 0.27);
+    }
+
+    .student-status-pill.status-bolos {
+      color: rgba(255, 215, 218, 0.96);
+      background: rgba(239, 68, 68, 0.13);
+      border-color: rgba(239, 68, 68, 0.27);
+    }
+
+    .student-status-pill.status-belum {
+      color: rgba(235, 238, 245, 0.78);
+      background: rgba(0, 0, 0, 0.24);
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    .student-status-pill.status-izin {
+      color: rgba(214, 231, 255, 0.96);
+      background: rgba(59, 130, 246, 0.13);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    .student-location-small {
+      color: rgba(255,255,255,0.46);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .student-status-open {
+      min-height: 38px;
+      padding: 9px 12px;
+      border-radius: 14px;
+      color: rgba(255, 232, 214, 0.96);
+      background: rgba(255, 154, 61, 0.10);
+      border: 1px solid rgba(255, 154, 61, 0.20);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      transition: 0.18s ease;
+    }
+
+    .student-status-open:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 154, 61, 0.15);
+      border-color: rgba(255, 154, 61, 0.32);
+    }
+
+    @media (max-width: 760px) {
+      .student-list-toolbar {
+        flex-direction: column;
+      }
+
+      .student-status-legend {
+        justify-content: flex-start;
+      }
+
+      .student-status-card {
+        grid-template-columns: 46px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .student-status-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+      }
+
+      .student-status-side {
+        grid-column: 2;
+        justify-items: start;
+        min-width: 0;
+      }
+
+      .student-status-open {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+    }
+
   </style>
 </head>
 
 <body>
+
+  <main id="locationMapPage" class="location-page hidden">
+    <div class="location-page-bg"></div>
+
+    <section class="location-page-shell">
+      <div class="location-page-top">
+        <div>
+          <span class="location-page-badge">Detail Lokasi Absen</span>
+          <h1 id="mapPageStudentName">Lokasi Siswa</h1>
+          <p id="mapPageSubText">Data lokasi hasil scan QR.</p>
+        </div>
+
+        <div id="mapPageStatusBadge" class="map-status-badge">Status</div>
+      </div>
+
+      <div class="location-page-grid">
+        <div class="location-page-map-card">
+          <iframe id="mapPageFrame" class="location-page-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+
+        <aside class="location-page-detail-card">
+          <h2>Informasi Absen</h2>
+
+          <div class="map-detail-list">
+            <div class="map-detail-item">
+              <span>Nama</span>
+              <strong id="mapPageName">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Email</span>
+              <strong id="mapPageEmail">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Status Absen</span>
+              <strong id="mapPageStatus">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Tanggal</span>
+              <strong id="mapPageDate">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Latitude</span>
+              <strong id="mapPageLat">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Longitude</span>
+              <strong id="mapPageLng">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Jarak dari sekolah</span>
+              <strong id="mapPageDistance">-</strong>
+            </div>
+
+            <div class="map-detail-item">
+              <span>Akurasi GPS</span>
+              <strong id="mapPageAccuracy">-</strong>
+            </div>
+          </div>
+
+          <div class="map-page-actions">
+            <a id="mapPageGoogleLink" class="btn btn-primary" href="#" target="_blank" rel="noopener">
+              Buka di Google Maps
+            </a>
+            <button id="mapPageCopyLinkBtn" class="btn" type="button">Copy Link Lokasi</button>
+            <button id="mapPageCloseBtn" class="btn" type="button">Kembali</button>
+          </div>
+
+          <p class="map-page-note">
+            Data lokasi ini berasal dari izin lokasi siswa saat scan QR absen.
+          </p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
   <div id="authLoading" class="auth-loading">
     <div class="auth-loading-card glass">
       <div class="brand-logo brand-logo-modern" aria-label="Logo Absen Kas"><svg viewBox="0 0 64 64" class="app-logo-svg" aria-hidden="true">
@@ -5547,7 +6117,7 @@
 
       <div class="tabs glass">
         <button class="tab active" data-tab="tabAbsen"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M8 6h11M8 12h11M8 18h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m3.8 6 1.2 1.2L7.5 4.7M3.8 12l1.2 1.2 2.5-2.5M3.8 18l1.2 1.2 2.5-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Absen</button>
-        <button class="tab admin-bendahara-only" data-tab="tabLokasi"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>Lokasi</button>
+        <button class="tab" data-tab="tabLokasi"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M8 6.5h8M8 12h8M8 17.5h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="4" y="3.5" width="16" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>Daftar Siswa</button>
         <button class="tab" data-tab="tabPengajuan"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M4 7.5 12 13l8-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3.5" y="5.5" width="17" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 3.5v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Pengajuan</button>
         <button class="tab" data-tab="tabKas"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 10h4M16.5 14.5h.01M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Kas</button>
         <button class="tab" data-tab="tabSiswa"><span class="tab-icon"><svg viewBox="0 0 24 24" class="ui-svg" aria-hidden="true"><path d="M16.5 19.2c0-2.3-2-4.2-4.5-4.2s-4.5 1.9-4.5 4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 18c0-1.7-1.2-3.1-2.9-3.6M15.7 6.3a3 3 0 0 1 0 5.4M5 18c0-1.7 1.2-3.1 2.9-3.6M8.3 6.3a3 3 0 0 0 0 5.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Siswa</button>
@@ -5719,20 +6289,35 @@
         </div>
       </section>
 
-      <section id="tabLokasi" class="section admin-bendahara-only">
+      <section id="tabLokasi" class="section">
         <div class="section-title">
           <div>
-            <h2>Lokasi Absen QR</h2>
-            <p>Lihat lokasi siswa yang absen melalui QR dan deteksi lokasi.</p>
+            <h2>Daftar Siswa</h2>
+            <p>Lihat nomor absen, nama siswa, dan status absen berdasarkan tanggal yang dipilih.</p>
           </div>
         </div>
 
-        <div class="grid grid-2 location-detail-grid">
+        <div class="student-list-toolbar glass">
+          <div>
+            <h3>Daftar Status Siswa</h3>
+            <p>Admin bisa membuka lokasi siswa yang absen lewat QR. Siswa hanya bisa melihat status dan nomor absen.</p>
+          </div>
+          <div class="student-status-legend">
+            <span class="legend-item legend-hadir">Hadir</span>
+            <span class="legend-item legend-sakit">Sakit</span>
+            <span class="legend-item legend-bolos">Bolos</span>
+            <span class="legend-item legend-belum">Belum masuk</span>
+          </div>
+        </div>
+
+        <div id="studentStatusList" class="student-status-list"></div>
+
+        <div class="grid grid-2 location-detail-grid admin-bendahara-only">
           <div class="card glass">
             <div class="card-header">
               <div>
-                <h2 id="locationStudentName">Pilih siswa dari Rekap Absen</h2>
-                <p id="locationStudentMeta">Klik nama siswa yang memiliki data lokasi.</p>
+                <h2 id="locationStudentName">Pilih siswa dari Daftar Siswa</h2>
+                <p id="locationStudentMeta">Admin bisa membuka lokasi siswa yang absen lewat QR.</p>
               </div>
             </div>
 
@@ -5762,7 +6347,7 @@
 
               <div class="location-action-row">
                 <a id="adminLocationMapLink" class="btn location-map-btn" href="#" target="_blank" rel="noopener">
-                  Buka di Google Maps
+                  Lihat Peta di Tab Baru
                 </a>
                 <button id="copyLocationLinkBtn" class="btn" type="button">Copy Link Maps</button>
               </div>
@@ -6442,6 +7027,122 @@
 
     const $ = (id) => document.getElementById(id);
 
+    const getMapViewParams = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("view") !== "map") return null;
+
+      return {
+        name: params.get("name") || "Siswa",
+        email: params.get("email") || "-",
+        status: params.get("status") || "-",
+        date: params.get("date") || "-",
+        lat: Number(params.get("lat")),
+        lng: Number(params.get("lng")),
+        distance: Number(params.get("distance")),
+        accuracy: Number(params.get("accuracy")),
+        mapsUrl: params.get("mapsUrl") || ""
+      };
+    };
+
+    const renderStandaloneMapPage = () => {
+      const data = getMapViewParams();
+      if (!data) return false;
+
+      const isValidLocation = Number.isFinite(data.lat) && Number.isFinite(data.lng);
+      const statusText = String(data.status || "").toLowerCase();
+      const isAccepted = statusText.includes("hadir") || statusText.includes("accepted") || statusText.includes("diterima");
+      const isRejected = statusText.includes("ditolak") || statusText.includes("rejected");
+
+      document.body.classList.add("is-map-page");
+
+      const mainApp = $("appPage");
+      const loginPage = $("loginPage");
+      const loading = $("authLoading");
+      const mapPage = $("locationMapPage");
+
+      if (mainApp) mainApp.classList.add("hidden");
+      if (loginPage) loginPage.classList.add("hidden");
+      if (loading) loading.classList.add("hidden");
+      if (mapPage) mapPage.classList.remove("hidden");
+
+      const mapsUrl = data.mapsUrl || (isValidLocation ? `https://www.google.com/maps?q=${data.lat},${data.lng}` : "#");
+      const embedUrl = isValidLocation ? `https://maps.google.com/maps?q=${data.lat},${data.lng}&z=18&output=embed` : "";
+
+      $("mapPageStudentName").textContent = data.name;
+      $("mapPageSubText").textContent = `${data.date} • Lokasi hasil scan QR absen siswa.`;
+      $("mapPageName").textContent = data.name;
+      $("mapPageEmail").textContent = data.email || "-";
+      $("mapPageStatus").textContent = data.status || "-";
+      $("mapPageDate").textContent = data.date || "-";
+      $("mapPageLat").textContent = isValidLocation ? data.lat.toFixed(7) : "-";
+      $("mapPageLng").textContent = isValidLocation ? data.lng.toFixed(7) : "-";
+      $("mapPageDistance").textContent = Number.isFinite(data.distance) ? `${data.distance} meter dari sekolah` : "-";
+      $("mapPageAccuracy").textContent = Number.isFinite(data.accuracy) ? `± ${Math.round(data.accuracy)} meter` : "-";
+
+      $("mapPageGoogleLink").href = mapsUrl;
+      $("mapPageFrame").src = embedUrl;
+
+      const badge = $("mapPageStatusBadge");
+      badge.textContent = isAccepted ? "Hadir diterima" : isRejected ? "Absen ditolak" : (data.status || "Status");
+      badge.classList.remove("accepted", "rejected");
+      if (isAccepted) badge.classList.add("accepted");
+      if (isRejected) badge.classList.add("rejected");
+
+      $("mapPageCopyLinkBtn")?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(mapsUrl);
+          alert("Link lokasi berhasil disalin.");
+        } catch {
+          alert("Gagal menyalin link lokasi.");
+        }
+      });
+
+      $("mapPageCloseBtn")?.addEventListener("click", () => {
+        if (history.length > 1) {
+          history.back();
+        } else {
+          window.close();
+        }
+      });
+
+      return true;
+    };
+
+    const openLocationInNewTab = (record) => {
+      if (!record || !hasLocationData(record)) {
+        showToast("Data lokasi siswa belum tersedia.");
+        return;
+      }
+
+      const { lat, lng } = getRecordLatLng(record);
+      const distance = Number(record.distanceMeters);
+      const accuracy = Number(record.accuracyMeters ?? record.accuracy);
+      const status = record.status === "hadir" || record.status === "accepted"
+        ? "Hadir"
+        : record.status === "ditolak" || record.status === "rejected"
+          ? "Ditolak"
+          : (record.status || "-");
+
+      const mapsUrl = record.mapsUrl || `https://www.google.com/maps?q=${lat},${lng}`;
+      const params = new URLSearchParams({
+        view: "map",
+        name: record.studentName || record.studentEmail || "Siswa",
+        email: record.studentEmail || record.updatedByEmail || "-",
+        status,
+        date: record.date || getTodayDate(),
+        lat: String(lat),
+        lng: String(lng),
+        distance: Number.isFinite(distance) ? String(distance) : "",
+        accuracy: Number.isFinite(accuracy) ? String(accuracy) : "",
+        mapsUrl
+      });
+
+      const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    };
+
+
+
     const forceShowLoginIfStuck = () => {
       window.setTimeout(() => {
         const loading = document.getElementById("authLoading");
@@ -6465,7 +7166,10 @@
       }, 3500);
     };
 
-    forceShowLoginIfStuck();
+    const isStandaloneMapPage = renderStandaloneMapPage();
+    if (!isStandaloneMapPage) {
+      forceShowLoginIfStuck();
+    }
 
     window.addEventListener("error", () => {
       const loading = document.getElementById("authLoading");
@@ -8021,7 +8725,12 @@
       $("adminLocationDistance").textContent = Number.isFinite(distance) ? `${distance} meter` : "-";
       $("adminLocationAccuracy").textContent = Number.isFinite(accuracy) ? `± ${Math.round(accuracy)} meter` : "-";
 
-      $("adminLocationMapLink").href = mapsUrl;
+      $("adminLocationMapLink").href = "#";
+      $("adminLocationMapLink").onclick = (event) => {
+        event.preventDefault();
+        openLocationInNewTab(record);
+      };
+      $("adminLocationMapLink").textContent = "Lihat Peta di Tab Baru";
       $("adminLocationMapFrame").src = embedUrl;
 
       $("locationDetailEmpty").classList.add("hidden");
@@ -8087,9 +8796,7 @@
       }
 
       const record = makeLocationRecordFromLog(log);
-      const tempId = `log:${cleanId}`;
-      state.attendance[tempId] = record;
-      openAttendanceLocation(tempId);
+      openLocationInNewTab(record);
     };
 
     const renderQrLocationList = () => {
@@ -8127,6 +8834,134 @@
               </button>
             </td>
           </tr>
+        `;
+      }).join("");
+    };
+
+
+
+    const normalizeAttendanceStatus = (record) => {
+      const status = String(record?.status || "").toLowerCase();
+
+      if (status === "hadir" || status === "accepted") {
+        return { key: "hadir", label: "Hadir" };
+      }
+
+      if (status === "sakit") {
+        return { key: "sakit", label: "Sakit" };
+      }
+
+      if (status === "izin") {
+        return { key: "izin", label: "Izin" };
+      }
+
+      if (status === "alfa" || status === "ditolak" || status === "rejected" || status === "bolos") {
+        return { key: "bolos", label: "Bolos" };
+      }
+
+      return { key: "belum", label: "Belum masuk" };
+    };
+
+    const getDisplayStudentRows = () => {
+      const rows = state.students.map((student) => {
+        const record = state.attendance[student.id] || {};
+        return {
+          id: student.id,
+          name: student.name,
+          number: student.number || "-",
+          className: student.className || "",
+          record,
+          fromList: true
+        };
+      });
+
+      const knownIds = new Set(state.students.map((student) => student.id));
+
+      Object.entries(state.attendance || {}).forEach(([recordId, record]) => {
+        if (knownIds.has(recordId)) return;
+        if (String(recordId).startsWith("log:")) return;
+
+        rows.push({
+          id: recordId,
+          name: record.studentName || record.studentEmail || "Siswa QR",
+          number: record.studentNumber || "-",
+          className: record.className || "",
+          record,
+          fromList: false
+        });
+      });
+
+      (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).forEach((log) => {
+        const alreadyExists = rows.some((row) => {
+          return row.record?.studentUid === log.studentUid || row.record?.studentEmail === log.studentEmail;
+        });
+
+        if (alreadyExists) return;
+
+        const record = makeLocationRecordFromLog(log);
+        const tempId = `log:${String(log.id).replace("log:", "").replace("stable:", "")}`;
+        state.attendance[tempId] = record;
+
+        rows.push({
+          id: tempId,
+          name: record.studentName || record.studentEmail || "Siswa QR",
+          number: "-",
+          className: "",
+          record,
+          fromList: false
+        });
+      });
+
+      return rows.sort((a, b) => {
+        const na = Number(a.number);
+        const nb = Number(b.number);
+
+        if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+        if (Number.isFinite(na)) return -1;
+        if (Number.isFinite(nb)) return 1;
+
+        return String(a.name).localeCompare(String(b.name));
+      });
+    };
+
+    const renderStudentStatusList = () => {
+      const list = $("studentStatusList");
+      if (!list) return;
+
+      const rows = getDisplayStudentRows();
+
+      if (!rows.length) {
+        list.innerHTML = `<div class="empty">Belum ada data siswa.</div>`;
+        return;
+      }
+
+      list.innerHTML = rows.map((row) => {
+        const status = normalizeAttendanceStatus(row.record);
+        const hasLocation = hasLocationData(row.record);
+        const canOpenLocation = hasLocation && isAdmin();
+        const numberText = row.number === "-" ? "QR" : String(row.number).padStart(2, "0");
+        const locationText = canOpenLocation ? "Lihat lokasi" : hasLocation ? "Lokasi tersimpan" : "Belum ada lokasi";
+
+        return `
+          <article class="student-status-card status-${status.key}">
+            <div class="student-status-number">${safeText(numberText)}</div>
+
+            <div class="student-status-main">
+              <h3>${safeText(row.name)}</h3>
+              <p>${safeText(row.className || "Data siswa")}</p>
+            </div>
+
+            <div class="student-status-side">
+              <span class="student-status-pill status-${status.key}">${safeText(status.label)}</span>
+              <span class="student-location-small">${safeText(locationText)}</span>
+            </div>
+
+            ${canOpenLocation ? `
+              <button type="button" class="student-status-open" data-open-attendance-location="${safeText(row.id)}">
+                Buka Peta
+              </button>
+            ` : ""}
+          </article>
         `;
       }).join("");
     };
@@ -8245,6 +9080,7 @@
       }).join("");
 
       renderQrLocationList();
+      renderStudentStatusList();
     };
 
     const renderCash = () => {
@@ -8828,6 +9664,12 @@
       if (!locationButton) return;
 
       event.preventDefault();
+
+      if (!isAdmin()) {
+        showToast("Lokasi hanya bisa dilihat admin.");
+        return;
+      }
+
       const recordId = locationButton.dataset.openAttendanceLocation;
       openAttendanceLocation(recordId);
     });
