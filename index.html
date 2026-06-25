@@ -5105,6 +5105,15 @@
       }
     }
 
+  
+    .field-help {
+      display: block;
+      margin-top: 7px;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
   </style>
 </head>
 
@@ -5383,6 +5392,7 @@
                 <label>
                   Aktif sampai
                   <input id="sessionEndInput" type="time" required />
+                  <span class="field-help">Format 24 jam. Jam 1 siang = 13:00. Untuk tes malam, pakai 23:59.</span>
                 </label>
               </div>
 
@@ -7133,6 +7143,22 @@
       return new Date(`${date}T${safeTime}:00`);
     };
 
+    const getEndTimeMessage = (endTime) => {
+      if (!endTime) return "Belum ada batas waktu.";
+
+      const [hourText, minuteText] = endTime.split(":");
+      const hour = Number(hourText);
+      const minute = Number(minuteText || 0);
+
+      if (!Number.isFinite(hour)) return `Aktif sampai ${endTime}.`;
+
+      const period = hour < 12 ? "pagi" : "siang/malam";
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const paddedMinute = String(minute).padStart(2, "0");
+
+      return `Aktif sampai ${endTime} atau jam ${displayHour}:${paddedMinute} ${period}.`;
+    };
+
     const renderQrSession = (session) => {
       const result = $("qrSessionResult");
       if (!result) return;
@@ -7147,7 +7173,7 @@
 
       $("qrSessionImage").src = qrUrl;
       $("qrSessionCode").textContent = session.code;
-      $("qrSessionMeta").textContent = `Tanggal ${session.date}. Radius ${session.radiusMeters} meter. Aktif sampai ${session.endTime}.`;
+      $("qrSessionMeta").textContent = `Tanggal ${session.date}. Radius ${session.radiusMeters} meter. ${getEndTimeMessage(session.endTime)}`;
       result.classList.remove("hidden");
     };
 
@@ -7231,10 +7257,12 @@
       }
 
       const now = new Date();
-      const endDateTime = getEndDateTime(session.date, session.endTime);
+      const endDateTime = session.expiresAtMs
+        ? new Date(Number(session.expiresAtMs))
+        : getEndDateTime(session.date, session.endTime);
 
       if (now > endDateTime) {
-        showToast("Sesi QR sudah melewati batas waktu.");
+        showToast(`Sesi QR sudah melewati batas waktu. Catatan: jam 1 siang harus 13:00, bukan 01:00.`);
         return;
       }
 
@@ -7855,7 +7883,7 @@
 
     $("attendanceDate").value = today();
     $("cashDate").value = today();
-    if ($("sessionEndInput")) $("sessionEndInput").value = "07:30";
+    if ($("sessionEndInput")) $("sessionEndInput").value = "23:59";
     if ($("requestDate")) $("requestDate").value = today();
     if ($("requestStudentName")) $("requestStudentName").value = getProfileName();
 
@@ -7902,6 +7930,13 @@
 
       const code = makeSessionCode();
 
+      const endDateTime = getEndDateTime(date, endTime);
+
+      if (endDateTime <= new Date()) {
+        showToast("Batas waktu sudah lewat. Jam 1 siang harus ditulis 13:00.");
+        return;
+      }
+
       await setDoc(doc(db, "attendanceSessions", code), {
         code,
         date,
@@ -7909,6 +7944,7 @@
         schoolLng,
         radiusMeters,
         endTime,
+        expiresAtMs: endDateTime.getTime(),
         active: true,
         createdByUid: state.user.uid,
         createdByEmail: state.user.email,
