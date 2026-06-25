@@ -5820,6 +5820,60 @@
       }
     }
 
+  
+    /* FIX DAFTAR SISWA UNTUK ROLE SISWA */
+    .qr-log-card.hidden,
+    .admin-only.hidden,
+    .admin-bendahara-only.hidden {
+      display: none !important;
+    }
+
+    .student-status-list {
+      gap: 9px !important;
+    }
+
+    .student-status-card {
+      grid-template-columns: 52px minmax(0, 1fr) auto !important;
+      min-height: 66px !important;
+      padding: 12px !important;
+    }
+
+    .student-status-card .student-location-small {
+      display: none !important;
+    }
+
+    .student-status-open {
+      grid-column: 1 / -1;
+    }
+
+    .student-status-main h3 {
+      font-size: 15px !important;
+    }
+
+    .student-status-main p {
+      font-size: 12px !important;
+      opacity: 0.82;
+    }
+
+    .student-status-number {
+      background: rgba(255, 255, 255, 0.055) !important;
+    }
+
+    @media (max-width: 760px) {
+      .student-status-card {
+        grid-template-columns: 48px minmax(0, 1fr) !important;
+      }
+
+      .student-status-side {
+        grid-column: 2 !important;
+        justify-items: start !important;
+      }
+
+      .student-status-open {
+        grid-column: 1 / -1 !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -6300,7 +6354,7 @@
         <div class="student-list-toolbar glass">
           <div>
             <h3>Daftar Status Siswa</h3>
-            <p>Admin bisa membuka lokasi siswa yang absen lewat QR. Siswa hanya bisa melihat status dan nomor absen.</p>
+            <p id="studentListHint">Lihat daftar siswa, nomor absen, dan status absen hari ini.</p>
           </div>
           <div class="student-status-legend">
             <span class="legend-item legend-hadir">Hadir</span>
@@ -6370,7 +6424,7 @@
           </div>
         </div>
 
-        <div class="card glass qr-log-card">
+        <div class="card glass qr-log-card admin-only">
           <div class="card-header">
             <div>
               <h2>Riwayat Lokasi QR</h2>
@@ -6859,6 +6913,18 @@
                 <input id="profileEmailInput" type="email" readonly />
               </label>
 
+              <div class="form-row">
+                <label>
+                  Nomor absen
+                  <input id="profileNumberInput" type="number" min="1" max="99" placeholder="Contoh: 1" />
+                </label>
+
+                <label>
+                  Kelas
+                  <input id="profileClassInput" type="text" placeholder="Contoh: X.1" maxlength="20" />
+                </label>
+              </div>
+
               <label>
                 Foto profil
                 <input id="profilePhotoInput" type="file" accept="image/*" />
@@ -6887,6 +6953,7 @@
             <div class="role-list">
               <div class="role-list-item">Nama tampilan bisa diganti kapan saja.</div>
               <div class="role-list-item">Alamat Gmail tetap mengikuti akun login.</div>
+              <div class="role-list-item">Nomor absen dan kelas bisa diisi di profil.</div>
               <div class="role-list-item">Foto profil tersimpan di Firestore.</div>
               <div class="role-list-item">Setiap akun hanya bisa mengubah profil miliknya sendiri.</div>
             </div>
@@ -7362,6 +7429,16 @@
 
     const getProfileEmail = () => state.user?.email || "-";
 
+    const getProfileNumber = () => {
+      const value = state.profile?.studentNumber || state.profile?.number || "";
+      return value ? String(value) : "";
+    };
+
+    const getProfileClass = () => {
+      const value = state.profile?.className || state.profile?.studentClass || "";
+      return value ? String(value) : "";
+    };
+
     const profileCacheKey = () => {
       return state.user ? `absenKasProfile:${state.user.uid}` : "";
     };
@@ -7490,6 +7567,8 @@
       if ($("profilePreviewRole")) $("profilePreviewRole").textContent = `Role: ${state.role || "-"}`;
       if ($("profileNameInput")) $("profileNameInput").value = name;
       if ($("profileEmailInput")) $("profileEmailInput").value = email;
+      if ($("profileNumberInput")) $("profileNumberInput").value = getProfileNumber();
+      if ($("profileClassInput")) $("profileClassInput").value = getProfileClass();
 
       if ($("profileFallback")) $("profileFallback").textContent = getInitials();
 
@@ -8840,6 +8919,12 @@
 
 
 
+
+    const normalizeKey = (value) => String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
     const normalizeAttendanceStatus = (record) => {
       const status = String(record?.status || "").toLowerCase();
 
@@ -8862,55 +8947,128 @@
       return { key: "belum", label: "Belum masuk" };
     };
 
+    const findBestRecordForStudent = (student) => {
+      const direct = state.attendance?.[student.id];
+      if (direct && Object.keys(direct).length) return direct;
+
+      const studentName = normalizeKey(student.name);
+      const studentEmail = normalizeKey(student.email);
+
+      const records = Object.values(state.attendance || {});
+      const matched = records.find((record) => {
+        const recordName = normalizeKey(record.studentName || record.byName);
+        const recordEmail = normalizeKey(record.studentEmail || record.updatedByEmail);
+        return (studentEmail && recordEmail && studentEmail === recordEmail)
+          || (studentName && recordName && studentName === recordName);
+      });
+
+      if (matched) return matched;
+
+      const location = (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).find((log) => {
+        const logName = normalizeKey(log.studentName);
+        const logEmail = normalizeKey(log.studentEmail);
+        return (studentEmail && logEmail && studentEmail === logEmail)
+          || (studentName && logName && studentName === logName);
+      });
+
+      return location ? makeLocationRecordFromLog(location) : {};
+    };
+
+    const makeRowKey = (row) => {
+      const email = normalizeKey(row.record?.studentEmail || row.email);
+      if (email) return `email:${email}`;
+
+      const number = String(row.number || "").trim();
+      if (number && number !== "-") return `number:${number}`;
+
+      return `name:${normalizeKey(row.name)}`;
+    };
+
     const getDisplayStudentRows = () => {
-      const rows = state.students.map((student) => {
-        const record = state.attendance[student.id] || {};
-        return {
+      const rows = [];
+      const usedKeys = new Set();
+
+      state.students.forEach((student) => {
+        const record = findBestRecordForStudent(student);
+        const row = {
           id: student.id,
           name: student.name,
+          email: student.email || record.studentEmail || "",
           number: student.number || "-",
-          className: student.className || "",
+          className: student.className || record.className || "",
           record,
           fromList: true
         };
+
+        const key = makeRowKey(row);
+        usedKeys.add(key);
+        rows.push(row);
       });
 
-      const knownIds = new Set(state.students.map((student) => student.id));
-
       Object.entries(state.attendance || {}).forEach(([recordId, record]) => {
-        if (knownIds.has(recordId)) return;
         if (String(recordId).startsWith("log:")) return;
 
-        rows.push({
+        const row = {
           id: recordId,
           name: record.studentName || record.studentEmail || "Siswa QR",
+          email: record.studentEmail || record.updatedByEmail || "",
           number: record.studentNumber || "-",
           className: record.className || "",
           record,
           fromList: false
-        });
+        };
+
+        const key = makeRowKey(row);
+        if (usedKeys.has(key)) return;
+
+        usedKeys.add(key);
+        rows.push(row);
       });
 
-      (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).forEach((log) => {
-        const alreadyExists = rows.some((row) => {
-          return row.record?.studentUid === log.studentUid || row.record?.studentEmail === log.studentEmail;
+      if (isAdmin()) {
+        (typeof getAllQrLocationSources === "function" ? getAllQrLocationSources() : []).forEach((log) => {
+          const record = makeLocationRecordFromLog(log);
+          const cleanId = String(log.id || "").replace("log:", "").replace("stable:", "");
+          const row = {
+            id: `log:${cleanId}`,
+            name: record.studentName || record.studentEmail || "Siswa QR",
+            email: record.studentEmail || "",
+            number: "-",
+            className: "",
+            record,
+            fromList: false
+          };
+
+          const key = makeRowKey(row);
+          if (usedKeys.has(key)) return;
+
+          usedKeys.add(key);
+          state.attendance[row.id] = record;
+          rows.push(row);
+        });
+      }
+
+      if (state.role === "siswa") {
+        const myEmail = normalizeKey(state.user?.email);
+        const myName = normalizeKey(getProfileName());
+        const alreadyListed = rows.some((row) => {
+          const rowEmail = normalizeKey(row.email || row.record?.studentEmail);
+          const rowName = normalizeKey(row.name);
+          return (myEmail && rowEmail && myEmail === rowEmail) || (myName && rowName && myName === rowName);
         });
 
-        if (alreadyExists) return;
-
-        const record = makeLocationRecordFromLog(log);
-        const tempId = `log:${String(log.id).replace("log:", "").replace("stable:", "")}`;
-        state.attendance[tempId] = record;
-
-        rows.push({
-          id: tempId,
-          name: record.studentName || record.studentEmail || "Siswa QR",
-          number: "-",
-          className: "",
-          record,
-          fromList: false
-        });
-      });
+        if (!alreadyListed && (getProfileNumber() || getProfileClass())) {
+          rows.push({
+            id: `profile:${state.user.uid}`,
+            name: getProfileName(),
+            email: state.user.email || "",
+            number: getProfileNumber() || "-",
+            className: getProfileClass() || "Profil siswa",
+            record: {},
+            fromList: false
+          });
+        }
+      }
 
       return rows.sort((a, b) => {
         const na = Number(a.number);
@@ -8928,19 +9086,30 @@
       const list = $("studentStatusList");
       if (!list) return;
 
+      const isAdminView = isAdmin();
       const rows = getDisplayStudentRows();
 
+      if ($("studentListHint")) {
+        $("studentListHint").textContent = isAdminView
+          ? "Daftar siswa sesuai nomor absen. Admin bisa membuka peta untuk siswa yang absen lewat QR."
+          : "Daftar siswa sesuai nomor absen. Kamu hanya bisa melihat nomor, nama, dan status absen.";
+      }
+
       if (!rows.length) {
-        list.innerHTML = `<div class="empty">Belum ada data siswa.</div>`;
+        list.innerHTML = `<div class="empty">Belum ada data siswa. Isi data siswa dari admin atau isi nomor absen di profil.</div>`;
         return;
       }
 
       list.innerHTML = rows.map((row) => {
         const status = normalizeAttendanceStatus(row.record);
         const hasLocation = hasLocationData(row.record);
-        const canOpenLocation = hasLocation && isAdmin();
-        const numberText = row.number === "-" ? "QR" : String(row.number).padStart(2, "0");
-        const locationText = canOpenLocation ? "Lihat lokasi" : hasLocation ? "Lokasi tersimpan" : "Belum ada lokasi";
+        const canOpenLocation = hasLocation && isAdminView;
+        const numberText = row.number === "-" ? "..." : String(row.number).padStart(2, "0");
+        const metaText = row.className
+          ? row.className
+          : row.email
+            ? row.email
+            : "Data siswa";
 
         return `
           <article class="student-status-card status-${status.key}">
@@ -8948,12 +9117,11 @@
 
             <div class="student-status-main">
               <h3>${safeText(row.name)}</h3>
-              <p>${safeText(row.className || "Data siswa")}</p>
+              <p>${safeText(metaText)}</p>
             </div>
 
             <div class="student-status-side">
               <span class="student-status-pill status-${status.key}">${safeText(status.label)}</span>
-              <span class="student-location-small">${safeText(locationText)}</span>
             </div>
 
             ${canOpenLocation ? `
@@ -9427,6 +9595,8 @@
       }
 
       const displayName = $("profileNameInput").value.trim();
+      const studentNumber = $("profileNumberInput")?.value.trim() || "";
+      const className = $("profileClassInput")?.value.trim() || "";
 
       if (!displayName) {
         showToast("Nama tampilan tidak boleh kosong.");
@@ -9441,6 +9611,8 @@
         uid: state.user.uid,
         email: state.user.email,
         displayName,
+        studentNumber,
+        className,
         photoDataUrl,
         role: state.role || "",
         updatedByUid: state.user.uid,
@@ -9486,6 +9658,7 @@
 
       renderProfileDisplay();
       renderRoleDashboard();
+      renderStudentStatusList();
       await addLog("UPDATE_PROFIL", `Mengubah profil ${displayName}`);
       showToast("Profil berhasil disimpan.");
     });
